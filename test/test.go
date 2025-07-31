@@ -1,0 +1,40 @@
+// test.go
+package test
+
+import (
+	"errors"
+	"fmt"
+	"os"
+)
+
+func mightFail() (string, error) {
+	return "hello", errors.New("a sample error")
+}
+
+func main() {
+	// 错误
+	_, err := mightFail()
+	fmt.Println(err) // <- 这里仅仅使用，没有检查 err
+
+	// 错误 (没有使用 err)
+	_, err = mightFail()
+
+	// 正确的例子 1
+	_, err = mightFail()
+	if err != nil {
+		panic(err)
+	}
+
+	// 正确的例子 2
+	f, err := os.Open("non-existent-file.txt")
+	if errors.Is(err, os.ErrNotExist) {
+		fmt.Println("file does not exist")
+	}
+	defer f.Close()
+
+	// 正确的例子 3
+	_, err = mightFail()
+	if err == nil {
+		// 这种检查虽然不常见，但语法上没错，我们暂时不处理
+	}
+}
