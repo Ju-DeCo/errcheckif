@@ -12,11 +12,11 @@ func mightFail() (string, error) {
 }
 
 func main() {
-	// 错误
+	// 错误 1
 	_, err := mightFail()
 	fmt.Println(err) // <- 这里仅仅使用，没有检查 err
 
-	// 错误 (没有使用 err)
+	// 错误 2 (没有使用 err)
 	_, err = mightFail()
 
 	// 正确的例子 1
@@ -36,5 +36,11 @@ func main() {
 	_, err = mightFail()
 	if err == nil {
 		// 这种检查虽然不常见，但语法上没错，我们暂时不处理
+	}
+
+	// 正确的例子 4
+	_, err = mightFail()
+	if errors.As(err, &os.ErrNotExist) {
+		fmt.Println("file does not exist")
 	}
 }

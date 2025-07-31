@@ -15,7 +15,7 @@ import (
 const doc = `checks that errors returned from functions are checked
 
 The errcheckif checker ensures that whenever a function call returns an error,
-that error is checked in a subsequent if statement using "err != nil",
+that error is checked in a subsequent if statement using "err != nil", "err == nil",
 "errors.Is", or "errors.As".`
 
 var Analyzer = &analysis.Analyzer{
@@ -40,7 +40,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
-		// We only care about `:=` and `=` that come from a function call
 		if len(assignStmt.Rhs) != 1 {
 			return
 		}
@@ -54,21 +53,19 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
-		// Find the code block and the statement's position within it.
 		path, _ := astutil.PathEnclosingInterval(findFile(pass, assignStmt), assignStmt.Pos(), assignStmt.End())
 		if path == nil {
 			return
 		}
 
 		if !isErrorHandled(pass, errIdent, path) {
-			pass.Reportf(errIdent.Pos(), "error '%s' is not checked with '!= nil', 'errors.Is', or 'errors.As'", errIdent.Name)
+			pass.Reportf(errIdent.Pos(), "error '%s' is not checked with '!= nil', '== nil', 'errors.Is', or 'errors.As'", errIdent.Name)
 		}
 	})
 
 	return nil, nil
 }
 
-// findReturnedError finds the identifier for a returned error variable in an assignment.
 func findReturnedError(pass *analysis.Pass, assign *ast.AssignStmt, call *ast.CallExpr) *ast.Ident {
 	sig, ok := pass.TypesInfo.TypeOf(call.Fun).(*types.Signature)
 	if !ok {
@@ -92,23 +89,16 @@ func findReturnedError(pass *analysis.Pass, assign *ast.AssignStmt, call *ast.Ca
 	return nil
 }
 
-// isErrorHandled checks if the error is handled in the statements following its assignment.
 func isErrorHandled(pass *analysis.Pass, errIdent *ast.Ident, path []ast.Node) bool {
-	// The path gives us the nodes from the specific `*ast.AssignStmt` up to the root.
-	// We need to find the enclosing block and the index of our statement.
 	for i, node := range path {
 		if block, ok := node.(*ast.BlockStmt); ok {
-			// Find which statement in the block is the parent of our assignment
 			for stmtIdx, stmt := range block.List {
-				// The direct child of the block is at path[i-1]
-				if stmt == path[i-1] {
-					// Now check all subsequent statements in this block
+				if i > 0 && stmt == path[i-1] {
 					for j := stmtIdx + 1; j < len(block.List); j++ {
 						subsequentStmt := block.List[j]
 						if checkIfStmtHandlesError(pass, subsequentStmt, errIdent) {
 							return true
 						}
-						// If the error variable is reassigned before a check, we consider it unhandled.
 						if isIdentifierReassigned(pass, subsequentStmt, errIdent) {
 							return false
 						}
@@ -120,7 +110,6 @@ func isErrorHandled(pass *analysis.Pass, errIdent *ast.Ident, path []ast.Node) b
 	return false
 }
 
-// checkIfStmtHandlesError checks if a single statement (e.g., an `if` statement) handles the error.
 func checkIfStmtHandlesError(pass *analysis.Pass, stmt ast.Node, errIdent *ast.Ident) bool {
 	ifStmt, ok := stmt.(*ast.IfStmt)
 	if !ok {
@@ -129,15 +118,14 @@ func checkIfStmtHandlesError(pass *analysis.Pass, stmt ast.Node, errIdent *ast.I
 	return checkCondition(pass, ifStmt.Cond, errIdent)
 }
 
-// checkCondition recursively checks if an expression (like an `if` condition) is a valid error check.
 func checkCondition(pass *analysis.Pass, cond ast.Expr, errIdent *ast.Ident) bool {
 	switch c := cond.(type) {
 	case *ast.BinaryExpr:
 		if c.Op == token.LOR {
 			return checkCondition(pass, c.X, errIdent) || checkCondition(pass, c.Y, errIdent)
 		}
-		if c.Op == token.NEQ {
-			// Check for `err != nil` or `nil != err`
+		// MODIFICATION: Accept both != and ==
+		if c.Op == token.NEQ || c.Op == token.EQL {
 			if isIdent(pass, c.X, errIdent) && isNil(pass, c.Y) {
 				return true
 			}
@@ -147,7 +135,6 @@ func checkCondition(pass *analysis.Pass, cond ast.Expr, errIdent *ast.Ident) boo
 		}
 
 	case *ast.CallExpr:
-		// Check for `errors.Is(err, ...)` or `errors.As(err, ...)`
 		sel, ok := c.Fun.(*ast.SelectorExpr)
 		if !ok {
 			return false
@@ -165,39 +152,32 @@ func checkCondition(pass *analysis.Pass, cond ast.Expr, errIdent *ast.Ident) boo
 	return false
 }
 
-// isIdentifierReassigned checks if an identifier is reassigned within a given statement node.
-// This implementation is safe against nil pointer panics.
 func isIdentifierReassigned(pass *analysis.Pass, stmt ast.Node, errIdent *ast.Ident) bool {
 	targetObj := pass.TypesInfo.ObjectOf(errIdent)
 	if targetObj == nil {
-		return false // Should not happen for a valid errIdent, but a good safeguard.
+		return false
 	}
 
 	reassigned := false
 	ast.Inspect(stmt, func(n ast.Node) bool {
 		assign, ok := n.(*ast.AssignStmt)
 		if !ok {
-			return true // Not an assignment, continue walking the tree.
+			return true
 		}
-
 		for _, lhs := range assign.Lhs {
 			ident, ok := lhs.(*ast.Ident)
 			if !ok {
-				continue // LHS is not a simple identifier, e.g., s.field
+				continue
 			}
-
-			// Safely get the object for the LHS identifier and compare with our target.
 			if pass.TypesInfo.ObjectOf(ident) == targetObj {
 				reassigned = true
-				return false // Found a reassignment, stop the inspection.
+				return false
 			}
 		}
 		return true
 	})
 	return reassigned
 }
-
-// --- Helper Functions ---
 
 func isIdent(pass *analysis.Pass, expr ast.Expr, targetIdent *ast.Ident) bool {
 	ident, ok := expr.(*ast.Ident)
