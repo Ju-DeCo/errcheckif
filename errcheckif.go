@@ -1,4 +1,3 @@
-// errcheckif.go
 package errcheckif
 
 import (
@@ -124,7 +123,6 @@ func checkCondition(pass *analysis.Pass, cond ast.Expr, errIdent *ast.Ident) boo
 		if c.Op == token.LOR {
 			return checkCondition(pass, c.X, errIdent) || checkCondition(pass, c.Y, errIdent)
 		}
-		// MODIFICATION: Accept both != and ==
 		if c.Op == token.NEQ || c.Op == token.EQL {
 			if isIdent(pass, c.X, errIdent) && isNil(pass, c.Y) {
 				return true
