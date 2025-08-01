@@ -6,7 +6,7 @@
 * `errors.Is`
 * `errors.As`
 
-例子：
+### 例子：
 
 ``` go
 // 错误 1
@@ -43,5 +43,10 @@ if errors.As(err, &os.ErrNotExist) {
 
 // 正确 5
 _, _ = mightFail()
+```
 
+### 进行测试：
+```
+go mod tidy
+go run .\cmd\errcheckif\ .\test\test.go
 ```
