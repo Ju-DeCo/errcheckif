@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -64,6 +65,23 @@ func test() {
 
 	_, err = mightFail()
 	if err != nil || err != http.ErrServerClosed {
+	}
+
+	// 正确 9 select 与 switch 语句
+	ctx := context.Background()
+	select {
+	case <-ctx.Done():
+		_, e1 := mightFail()
+		if e1 != nil {
+		}
+	}
+
+	t := 1
+	switch t {
+	case 1:
+		_, e2 := mightFail()
+		if e2 != nil {
+		}
 	}
 }
 

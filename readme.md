@@ -60,6 +60,32 @@ func error_propagation() (string, error) {
     return fail, err
 }
 
+// 正确 8 逻辑与 与 逻辑或
+_, err = mightFail()
+if err != nil && err != http.ErrServerClosed {
+}
+
+_, err = mightFail()
+if err != nil || err != http.ErrServerClosed {
+}
+
+
+// 正确 9 select 与 switch 语句
+ctx := context.Background()
+select {
+case <-ctx.Done():
+    _, e1 := mightFail()
+    if e1 != nil {
+    }
+}
+
+t := 1
+switch t {
+case 1:
+    _, e2 := mightFail()
+    if e2 != nil {
+    }
+}
 ```
 
 ### 进行测试：
