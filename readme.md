@@ -53,6 +53,13 @@ if _, err = mightFail(); errors.Is(err, os.ErrNotExist) {
 }
 if _, err = mightFail(); errors.As(err, &os.ErrNotExist) {
 }
+
+func error_propagation() (string, error) {
+	// 正确 7 错误传递
+	fail, err := mightFail()
+	return fail, err
+}
+
 ```
 
 ### 进行测试：

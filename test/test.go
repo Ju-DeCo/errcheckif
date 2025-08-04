@@ -57,3 +57,9 @@ func test() {
 	}
 
 }
+
+func error_propagation() (string, error) {
+	// 正确 7 错误传递
+	fail, err := mightFail()
+	return fail, err
+}
