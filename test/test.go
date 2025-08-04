@@ -3,6 +3,7 @@ package test
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 )
 
@@ -56,6 +57,14 @@ func test() {
 	if _, err = mightFail(); errors.As(err, &os.ErrNotExist) {
 	}
 
+	// 正确 8 逻辑与 与 逻辑或
+	_, err = mightFail()
+	if err != nil && err != http.ErrServerClosed {
+	}
+
+	_, err = mightFail()
+	if err != nil || err != http.ErrServerClosed {
+	}
 }
 
 func error_propagation() (string, error) {
