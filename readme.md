@@ -6,7 +6,7 @@
 * `errors.Is`
 * `errors.As`
 
-默认跳过测试文件，以`_test.go`结尾。
+默认跳过测试文件（以`_test.go`结尾）。
 
 ### 例子：
 
@@ -96,7 +96,7 @@ go mod tidy
 go run .\cmd\errcheckif\ .\test\test.go
 ```
 
-### 局限性（难以解决）
+### 局限性
 
 **控制流误报**
 ``` go

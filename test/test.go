@@ -99,20 +99,32 @@ func test() {
 	if err != nil {
 	}
 
-	// 并发 defer 处理
+	// 并发
 	go func() {
 		var terr error
 		defer func() {
-			if terr != nil {
+			if terr != nil { //defer中处理
 			}
 		}()
 		terr = fail()
 	}()
 
+	var terr error
+	go func() {
+		terr = fail() // 协程赋值
+	}()
+	if terr != nil {
+	}
 }
 
 func error_propagation() (string, error) {
 	// 正确 7 错误传递
 	fail, err := mightFail()
 	return fail, err
+}
+
+// 正确 裸返回 naked return
+func test_naked_return() (err error) {
+	err = errors.New("123")
+	return
 }
