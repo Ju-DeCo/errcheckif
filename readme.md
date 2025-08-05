@@ -6,6 +6,8 @@
 * `errors.Is`
 * `errors.As`
 
+默认跳过测试文件，以`_test.go`结尾。
+
 ### 例子：
 
 ``` go
@@ -92,4 +94,30 @@ case 1:
 ```
 go mod tidy
 go run .\cmd\errcheckif\ .\test\test.go
+```
+
+### 局限性（难以解决）
+
+**控制流误报**
+``` go
+if 1 < 2 {
+    _, err = mightFail()
+} else {
+    _, err = mightFail()
+}
+if err != nil {
+}
+
+```
+
+**并发误报**
+``` go
+go func() {
+    var terr error
+    defer func() {
+        if terr != nil {
+        }
+    }()
+    terr = fail()
+}()
 ```

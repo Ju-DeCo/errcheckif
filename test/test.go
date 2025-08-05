@@ -12,6 +12,10 @@ func mightFail() (string, error) {
 	return "hello", errors.New("a sample error")
 }
 
+func fail() error {
+	return errors.New("123")
+}
+
 func test() {
 	// 错误 1
 	_, err := mightFail()
@@ -83,6 +87,28 @@ func test() {
 		if e2 != nil {
 		}
 	}
+
+	// 未能解决的问题
+
+	// 控制流
+	if 1 < 2 {
+		_, err = mightFail()
+	} else {
+		_, err = mightFail()
+	}
+	if err != nil {
+	}
+
+	// 并发 defer 处理
+	go func() {
+		var terr error
+		defer func() {
+			if terr != nil {
+			}
+		}()
+		terr = fail()
+	}()
+
 }
 
 func error_propagation() (string, error) {
