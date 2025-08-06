@@ -1,4 +1,4 @@
-package test
+package t_cursor
 
 import (
 	"context"
@@ -17,43 +17,34 @@ func fail() error {
 }
 
 func test() {
-	// 错误 1
 	_, err := mightFail()
-	fmt.Println(err) // 这里仅仅使用，没有检查 err
+	fmt.Println(err)
 
-	// 错误 2 (没有使用 err)
 	_, err = mightFail()
 
-	// 错误 3 直接忽略错误
-	_, _ = mightFail()
-	_ = fail()
-
-	// 正确 1
 	_, err = mightFail()
 	if err != nil {
 		panic(err)
 	}
 
-	// 正确 2
 	f, err := os.Open("non-existent-file.txt")
 	if errors.Is(err, os.ErrNotExist) {
 		fmt.Println("file does not exist")
 	}
 	defer f.Close()
 
-	// 正确 3
 	_, err = mightFail()
 	if err == nil {
-		// 这种检查虽然不常见，但语法上没错，我们暂时不处理
+
 	}
 
-	// 正确 4
 	_, err = mightFail()
 	if errors.As(err, &os.ErrNotExist) {
 		fmt.Println("file does not exist")
 	}
 
-	// 正确 5 if-init模式
+	_, _ = mightFail()
+
 	if _, err = mightFail(); err != nil {
 	}
 	if _, err = mightFail(); err == nil {
@@ -63,7 +54,6 @@ func test() {
 	if _, err = mightFail(); errors.As(err, &os.ErrNotExist) {
 	}
 
-	// 正确 6 逻辑与 与 逻辑或
 	_, err = mightFail()
 	if err != nil && err != http.ErrServerClosed {
 	}
@@ -72,7 +62,6 @@ func test() {
 	if err != nil || err != http.ErrServerClosed {
 	}
 
-	// 正确 7 select 与 switch 语句
 	ctx := context.Background()
 	select {
 	case <-ctx.Done():
@@ -89,9 +78,6 @@ func test() {
 		}
 	}
 
-	// 未能解决的问题
-
-	// 控制流
 	if 1 < 2 {
 		_, err = mightFail()
 	} else {
@@ -119,12 +105,10 @@ func test() {
 }
 
 func error_propagation() (string, error) {
-	// 正确 8 错误传递
 	fail, err := mightFail()
 	return fail, err
 }
 
-// 正确 9 裸返回 naked return
 func test_naked_return() (err error) {
 	err = errors.New("123")
 	return

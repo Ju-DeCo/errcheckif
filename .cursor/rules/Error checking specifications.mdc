@@ -1,0 +1,185 @@
+---
+globs: "*.go"
+description: 错误检查规范 - 如果函数调用返回了error类型的变量，那么必须对该变量进行处理
+---
+
+# 错误检查规范
+
+## 规范概述
+
+在 Go 代码中，如果函数调用返回了error类型的变量，那么必须对该变量进行检测。
+可通过以下方式之一进行处理：
+
+1. 使用 `if err != nil` 进行错误检查
+2. 使用 `if err == nil` 进行成功检查
+3. 使用 `errors.Is(err, target)` 进行错误类型判断
+4. 使用 `errors.As(err, target)` 进行错误类型断言
+5. 通过 `return` 语句传递错误 (包括裸返回)
+6. if-init 模式需要适配
+7. if-else 语句只需进行一次判断即可
+8. 不能通过 `_` 对错误进行忽略
+
+## 正确示例
+
+### 基本错误检查
+```go
+// 正确：使用 if err != nil 检查
+result, err := doSomething()
+if err != nil {
+    return fmt.Errorf("failed to do something: %w", err)
+}
+```
+
+### 错误类型判断
+```go
+// 正确：使用 errors.Is 进行错误类型判断
+if errors.Is(err, sql.ErrNoRows) {
+    return nil // 处理特定错误类型
+}
+```
+
+### 错误类型断言
+```go
+// 正确：使用 errors.As 进行错误类型断言
+var validationErr *ValidationError
+if errors.As(err, &validationErr) {
+    // 处理验证错误
+    return validationErr
+}
+```
+
+### 成功检查
+```go
+// 正确：使用 if err == nil 进行成功检查
+if err := doSomething(); err == nil {
+    // 处理成功情况
+    return nil
+}
+```
+
+### 错误传递
+```go
+// 正确：直接返回错误
+result, err := doSomething()
+if err != nil {
+    return err // 直接传递错误
+}
+
+// 正确：裸返回
+func naked_return() (err error) {
+    err = errors.New("123")
+    return
+}
+```
+
+### if-init 模式
+```go
+// 正确: if-init模式
+if _, err = mightFail(); err != nil {
+}
+if _, err = mightFail(); err == nil {
+}
+if _, err = mightFail(); errors.Is(err, os.ErrNotExist) {
+}
+if _, err = mightFail(); errors.As(err, &os.ErrNotExist) {
+}
+```
+
+### if-else 类型
+```go
+// 正确： 控制流模式（if-else只有一个err被赋值，最后只需检测一次即可）
+if cond {
+    _, err = mightFail()
+} else {
+    _, err = mightFail()
+}
+if err != nil {
+}
+```
+
+## 错误示例
+
+### 仅仅使用错误但没有进行检测
+```go
+// 错误： 必须对错误按照规范进行检测
+_, err := mightFail()
+fmt.Println(err) // 这里仅仅使用，没有检查 err
+```
+
+### 忽略错误
+```go
+// 错误：直接忽略错误
+result, _ := doSomething()
+```
+
+### 未使用错误变量
+```go
+// 错误：定义了 err 但未使用
+result, err := doSomething()
+// 错误：err 变量未被检查或使用
+return result
+```
+
+## 检测规则
+
+### 1. 错误变量定义检测
+- 查找所有 `err` 变量定义：`err :=` 或 `err =`
+- 检查 `err` 变量是否在后续代码中按照规则检测
+
+### 2. 错误忽略检测
+- 查找 `_, err = functionCall()` 但 `err` 未被使用的情况
+
+### 3. 错误处理检测
+- 查找 `if err != nil` 语句
+- 查找 `if err == nil` 语句
+- 查找 `errors.Is(err, ...)` 语句
+- 查找 `errors.As(err, ...)` 语句
+- 查找 `return err` 语句 或 `return` 裸返回语句
+
+### 4. 违规模式
+- 定义了 `err` 变量但未在 `if` 语句中检查或未被 `return`
+- 在错误检查后未正确处理
+
+## 最佳实践
+
+### 1. 错误处理顺序
+```go
+// 推荐：先检查错误，再使用结果
+result, err := doSomething()
+if err != nil {
+    return fmt.Errorf("failed to do something: %w", err)
+}
+// 安全使用 result
+```
+
+### 2. 错误分类处理
+```go
+// 推荐：根据错误类型进行不同处理
+if errors.Is(err, sql.ErrNoRows) {
+    return nil // 数据不存在，不是错误
+}
+if errors.Is(err, sql.ErrConnDone) {
+    return fmt.Errorf("database connection lost: %w", err)
+}
+return fmt.Errorf("database operation failed: %w", err)
+```
+
+## Best Practices Summary
+
+### Do's
+- ✅ Always handle errors explicitly with if or return statements
+- ✅ Use `if err != nil` for error checking
+- ✅ Use `if err == nil` for success checking
+- ✅ Use `errors.Is(err, target)` for error type comparison
+- ✅ Use `errors.As(err, target)` for error type assertion
+- ✅ Return errors immediately when detected
+
+### Don'ts
+- ❌ Ignore errors with blank identifier `_`
+- ❌ Use `_, _ = functionCall()` to ignore errors
+- ❌ Define err variables without checking them
+- ❌ Continue execution after error without proper handling
+- ❌ Use panic for normal error conditions
+- ❌ Log and return the same error (choose one)
+- ❌ Use string matching for error handling
+- ❌ Create error messages that expose internal implementation details
