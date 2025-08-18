@@ -11,7 +11,7 @@
 
 默认跳过测试文件（以`_test.go`结尾）。
 
-### 例子：
+### 例子
 
 ``` go
 // 错误 1
@@ -61,6 +61,19 @@ func test_naked_return() (err error) {
     err = errors.New("123")
     return
 }
+
+// 正确7 if-else
+func ttest01(cond bool) {
+    var err error
+    
+    if cond {
+        err = rterr()
+    } else {
+        _, err = os.Open("test.txt")
+    }
+    if err != nil {
+    }
+}
 ```
 
 ### 进行测试：
@@ -70,18 +83,6 @@ go run .\cmd\errcheckif\ .\test\test.go
 ```
 
 ### 局限性
-
-**控制流误报**
-``` go
-if 1 < 2 {
-    _, err = mightFail()
-} else {
-    _, err = mightFail()
-}
-if err != nil {
-}
-
-```
 
 **并发误报**
 ``` go

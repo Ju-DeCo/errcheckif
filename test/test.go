@@ -91,15 +91,6 @@ func test() {
 
 	// 未能解决的问题
 
-	// 控制流
-	if 1 < 2 {
-		_, err = mightFail()
-	} else {
-		_, err = mightFail()
-	}
-	if err != nil {
-	}
-
 	// 并发
 	go func() {
 		var terr error
@@ -128,4 +119,99 @@ func error_propagation() (string, error) {
 func test_naked_return() (err error) {
 	err = errors.New("123")
 	return
+}
+
+// 错误
+func test_cross(cond bool) {
+	err := fail() // Linter 发现 err A
+	if cond {
+		err = fail() // 一个新的 err B
+		if err != nil {
+			return
+		}
+	}
+	fmt.Println(err)
+	// 此处 err A 未被处理
+}
+
+// ================= ifelse  ==================
+func rterr() error {
+	return errors.New("test")
+}
+
+// 正确 1
+func ttest01(cond bool) {
+	var err error
+
+	if cond {
+		err = rterr()
+	} else {
+		_, err = os.Open("test.txt")
+	}
+	if err != nil {
+	}
+}
+
+// 正确 2
+func ttest02(cond bool) {
+	var err error
+
+	if cond {
+		err = rterr()
+	} else {
+		_, err = os.Open("test.txt")
+	}
+	if err == nil {
+	}
+}
+
+// 正确 3
+func ttest03(cond bool) {
+	var err error
+
+	if cond {
+		err = rterr()
+	} else {
+		_, err = os.Open("test.txt")
+	}
+	if errors.Is(err, os.ErrNotExist) {
+	}
+}
+
+// 正确 4
+func ttest04(cond bool) {
+	var err error
+
+	if cond {
+		err = rterr()
+	} else {
+		_, err = os.Open("test.txt")
+	}
+	if errors.As(err, os.ErrNotExist) {
+	}
+}
+
+// 错误 1
+func ftest01(cond bool) {
+	var err error
+
+	if cond {
+		err = rterr()
+	} else {
+		_, err = os.Open("test.txt")
+	}
+	fmt.Println(err)
+}
+
+// 错误 2
+func ftest02(cond bool) {
+	err := rterr()
+	if err != nil {
+	}
+
+	if cond {
+		err = rterr()
+	} else {
+		_, err = os.Open("test.txt")
+	}
 }
