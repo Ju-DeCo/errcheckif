@@ -2,10 +2,10 @@
 
 如果函数调用返回值包含`error`类型，那么这个`error`变量 err 必须在后续 `if` 语句中被检查，检查条件可以是：
 
-* err != nil
-* err == nil
-* errors.Is(err, ***)
-* errors.As(err, ***)
+* `err != nil`
+* `err == nil`
+* `errors.Is(err, ***)`
+* `errors.As(err, ***)`
 
 或者通过 `return` 进行错误传递，不能使用 `_` 对错误进行忽略。
 
