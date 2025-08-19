@@ -208,13 +208,17 @@ func ttest05(cond bool) {
 // 测试
 func ttest06(cond bool) {
 
+	var err error
 	if cond {
-		err := rterr()
+		err = rterr()
 		if err == nil {
+			return
 		}
+
 	} else {
-		_, err := os.Open("test.txt")
+		_, err = os.Open("test.txt")
 		if err != nil {
+			return
 		}
 	}
 }
