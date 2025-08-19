@@ -191,6 +191,34 @@ func ttest04(cond bool) {
 	}
 }
 
+// 正确 5
+func ttest05(cond bool) {
+	var err error
+
+	if cond {
+		err = rterr()
+	} else {
+		_, err = os.Open("test.txt")
+	}
+	fmt.Println("hello\n")
+	if err != nil {
+	}
+}
+
+// 测试
+func ttest06(cond bool) {
+
+	if cond {
+		err := rterr()
+		if err == nil {
+		}
+	} else {
+		_, err := os.Open("test.txt")
+		if err != nil {
+		}
+	}
+}
+
 // 错误 1
 func ftest01(cond bool) {
 	var err error
